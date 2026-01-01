@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dlbarduzzi/scopehouse/apis"
 	"github.com/dlbarduzzi/scopehouse/core"
 	"github.com/spf13/viper"
 )
@@ -72,7 +73,12 @@ func (sh *ScopeHouse) Start() error {
 		return err
 	}
 
-	return nil
+	return apis.Serve(sh.App, apis.ServeConfig{
+		Port:         sh.serverPort,
+		IdleTimeout:  time.Second * sh.serverIdleTimeout,
+		ReadTimeout:  time.Second * sh.serverReadTimeout,
+		WriteTimeout: time.Second * sh.serverWriteTimeout,
+	})
 }
 
 func (sh *ScopeHouse) parseConfig(config *Config) {

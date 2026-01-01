@@ -1,8 +1,11 @@
 package core
 
 import (
+	"errors"
 	"log/slog"
 	"time"
+
+	"github.com/dlbarduzzi/scopehouse/tools/logging"
 )
 
 const (
@@ -72,5 +75,15 @@ func (app *BaseApp) OnShutdown() {
 }
 
 func (app *BaseApp) initLogger() error {
+	app.logger = logging.NewLoggerWithConfig(logging.Config{
+		Level:    logging.LogLevel(app.config.LogLevel),
+		Format:   logging.LogFormat(app.config.LogFormat),
+		Disabled: app.config.LogDisabled,
+	}).With(slog.String("app", "scopehouse"))
+
+	if app.logger == nil {
+		return errors.New("logger not initialized")
+	}
+
 	return nil
 }
