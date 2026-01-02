@@ -48,5 +48,5 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository }}:latest
             ghcr.io/${{ github.repository }}:${{ github.sha }}
-          cache-from: type=registry,ref=${{ steps.meta.outputs.image }}:buildcache
-          cache-to: type=registry,ref=${{ steps.meta.outputs.image }}:buildcache,mode=max
+          # cache-from: type=registry,ref=${{ steps.meta.outputs.image }}:buildcache
+          # cache-to: type=registry,ref=${{ steps.meta.outputs.image }}:buildcache,mode=max
