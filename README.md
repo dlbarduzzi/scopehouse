@@ -1,5 +1,17 @@
 # ScopeHouse
 
+<p>
+  <a
+    href="https://github.com/dlbarduzzi/scopehouse/actions/workflows/build.yml"
+    target="_blank"
+    rel="noopener">
+    <img
+      src="https://github.com/dlbarduzzi/scopehouse/actions/workflows/build.yml/badge.svg"
+      alt="build"
+    />
+  </a>
+</p>
+
 A centralized control plane for managing and synchronizing Prometheus alerts across multiple clusters.
 
 ## Docker
