@@ -1,0 +1,11 @@
+name: PullRequest
+
+on:
+  pull_request:
+    branches:
+      - "*"
+
+jobs:
+  test:
+    name: Test
+    uses: ./.github/workflows/test.yml

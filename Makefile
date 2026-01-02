@@ -2,9 +2,11 @@
 run:
 	@go run ./cmd/scopehouse
 
-.PHONY: local/run
-local/run:
-	@SH_CONFIG_PATH='.local/etc/scopehouse/configs' SH_SECRET_PATH='.local/etc/scopehouse/secrets' go run ./cmd/scopehouse
+.PHONY: run/dev
+run/dev:
+	@SH_CONFIG_PATH='.volume/etc/scopehouse/configs' \
+	SH_SECRET_PATH='.volume/etc/scopehouse/secrets' \
+	go run ./cmd/scopehouse
 
 .PHONY: tidy
 tidy:

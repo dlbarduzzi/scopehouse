@@ -1,0 +1,19 @@
+services:
+  api:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    ports:
+      - 8090:8090
+    volumes:
+      - ./.volume/etc/scopehouse/configs:/etc/scopehouse/configs
+      - ./.volume/etc/scopehouse/secrets:/etc/scopehouse/secrets
+    environment:
+      - SH_CONFIG_PATH=/etc/scopehouse/configs
+      - SH_SECRET_PATH=/etc/scopehouse/secrets
+    networks:
+      - scopehouse
+
+networks:
+  scopehouse:
+    driver: bridge
