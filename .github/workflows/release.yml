@@ -1,0 +1,110 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*" # SemVer validation is applied as part of the jobs below.
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  test:
+    name: Test
+    uses: ./.github/workflows/test.yml
+
+  build:
+    # Only run for tag refs that start with `v` (i.e. v.1.2.3)
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    needs:
+      - test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Validate tag
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          TAG_NAME="${GITHUB_REF_NAME}"   # e.g. v1.2.3
+          VERSION="${TAG_NAME#v}"         # e.g. 1.2.3
+
+          # Ensure we are in main branch and tags are available.
+          git fetch --force --tags origin main
+
+          # Get commit hash from tag version.
+          TAG_SHA="$(git rev-list -n 1 "$TAG_NAME")"
+
+          # Ensure tag commit is reachable from main branch.
+          if ! git merge-base --is-ancestor "$TAG_SHA" "origin/main"; then
+            echo "Refusing to run: tag '$TAG_NAME' points to commit $TAG_SHA which is not contained in origin/main."
+            echo "Create/push the tag from a commit on main and try again."
+            exit 1
+          fi
+
+          # SemVer version validation. Valid values are:
+          # - 1.2.3
+          # - 1.2.3-rc.1
+          # 1.2.3+build.7 and so on.
+          SEMVER_REGEX='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?(\+([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?$'
+          if [[ ! "$VERSION" =~ $SEMVER_REGEX ]]; then
+            echo "Invalid SemVer tag: '$TAG_NAME' (parsed version: '$VERSION')."
+            exit 1
+          fi
+
+          # Generate image name.
+          IMAGE="ghcr.io/${{ github.repository }}"
+          IMAGE="$(echo -n "$IMAGE" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')"
+
+          # Generate 'latest' tag for image. This is only created for stable releases.
+          TAGS="$IMAGE:$VERSION"
+          if [[ "$VERSION" != *-* ]]; then
+            TAGS="$TAGS"$'\n'"$IMAGE:latest"
+          fi
+
+          echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"
+          echo "tag_sha=$TAG_SHA" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
+          {
+            echo "tags<<EOF"
+            echo "$TAGS"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Checkout the tag (exact release source)
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ steps.meta.outputs.tag_name }}
+          fetch-depth: 0
+
+      - name: Set up QEMU (multi-arch)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push (multi-arch)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=registry,ref=${{ steps.meta.outputs.image }}:buildcache
+          cache-to: type=registry,ref=${{ steps.meta.outputs.image }}:buildcache,mode=max
