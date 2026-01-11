@@ -1,0 +1,78 @@
+name: Release
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  test:
+    name: Test
+    uses: ./.github/workflows/test.yml
+
+  build:
+    name: Build docker image
+    runs-on: ubuntu-latest
+    needs:
+      - test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set environment variables
+        id: meta
+        shell: bash
+        run: |
+          set -e
+          set -o pipefail
+
+          # Make sure the release job is only run from the main branch.
+          if [[ $GITHUB_REF != 'refs/heads/main' ]]; then
+            echo "[error] you cannot run the release job outside of the main branch"
+            exit 1
+          fi
+
+          IMAGE="ghcr.io/${{ github.repository }}"
+          VERSION=$(cat VERSION)
+
+          IMAGE_LATEST="$IMAGE:latest"
+          IMAGE_TAGGED="$IMAGE:$VERSION"
+
+          TAGS=$IMAGE_TAGGED
+
+          # Add the 'latest' tag only from a stable version.
+          if [[ $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            TAGS="$TAGS"$'\n'"$IMAGE_LATEST"
+          fi
+
+          {
+            echo "tags<<EOF"
+            echo "$TAGS"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
+      - name: Login to container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up QEMU (multi-arch)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up docker buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push (multi-arch)
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          context: .
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
