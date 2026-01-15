@@ -9,21 +9,6 @@ import (
 	"github.com/dlbarduzzi/scopehouse/internal/tools/inflector"
 )
 
-func (s *service) internalServerError(w http.ResponseWriter, r *http.Request, err error) {
-	s.app.Logger().Error("internal server error",
-		slog.Any("error", err),
-		slog.String("method", r.Method),
-		slog.String("request", r.RequestURI),
-	)
-
-	resp := newInternalServerError("")
-
-	if err := event.WriteJson(w, resp, resp.Status); err != nil {
-		_ = event.WriteStatus(w, http.StatusInternalServerError)
-		return
-	}
-}
-
 type apiError struct {
 	Status  int    `json:"status"`
 	Message string `json:"message"`
@@ -53,4 +38,19 @@ func newInternalServerError(message string) *apiError {
 	}
 
 	return newApiError(http.StatusInternalServerError, msg)
+}
+
+func (s *service) internalServerError(w http.ResponseWriter, r *http.Request, err error) {
+	s.app.Logger().Error("internal server error",
+		slog.Any("error", err),
+		slog.String("method", r.Method),
+		slog.String("request", r.RequestURI),
+	)
+
+	resp := newInternalServerError("")
+
+	if err := event.WriteJson(w, resp, resp.Status); err != nil {
+		_ = event.WriteStatus(w, http.StatusInternalServerError)
+		return
+	}
 }
