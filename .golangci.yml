@@ -1,0 +1,42 @@
+version: "2"
+run:
+  go: "1.25"
+  timeout: 10m
+  concurrency: 4
+linters:
+  default: none
+  enable:
+    - asasalint
+    - asciicheck
+    - errcheck
+    - gomodguard
+    - goprintffuncname
+    - govet
+    - ineffassign
+    - misspell
+    - nakedret
+    - nolintlint
+    - prealloc
+    - reassign
+    - revive
+    - staticcheck
+    - unconvert
+    - unused
+    - whitespace
+  exclusions:
+    presets:
+      - comments
+  settings:
+    revive:
+      rules:
+        - name: unused-parameter
+          disabled: false
+        - name: var-naming
+          arguments:
+            # Allowed list.
+            - ["API", "HTTP", "HTTPS",  "ID", "JSON", "URL"]
+formatters:
+  enable:
+    - gofmt
+    - gofumpt
+    - goimports

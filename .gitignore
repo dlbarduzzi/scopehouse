@@ -1,0 +1,19 @@
+.vscode
+.idea
+
+# go builds
+/.builds/
+
+# tests
+coverage.out
+
+# misc
+.DS_Store
+
+# env
+.env*
+!.env.example
+
+# other
+.local/
+.volume/
