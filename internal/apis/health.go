@@ -1,9 +1,9 @@
 package apis
 
 import (
-	"fmt"
-	"log/slog"
 	"net/http"
+
+	"github.com/dlbarduzzi/scopehouse/internal/tools/event"
 )
 
 func (s *service) healthCheck(w http.ResponseWriter, r *http.Request) {
@@ -15,6 +15,8 @@ func (s *service) healthCheck(w http.ResponseWriter, r *http.Request) {
 		Message: "API is healthy.",
 	}
 
-	s.app.Logger().Info("health called", slog.String("url", r.RequestURI))
-	_, _ = fmt.Fprintf(w, "%d - %s", resp.Status, resp.Message)
+	if err := event.WriteJson(w, resp, resp.Status); err != nil {
+		s.internalServerError(w, r, err)
+		return
+	}
 }
