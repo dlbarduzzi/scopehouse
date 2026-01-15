@@ -1,0 +1,23 @@
+services:
+  db:
+    image: postgres:18.1
+    ports:
+      - 5432:5432
+    volumes:
+      - ./.volume/db:/var/lib/postgresql
+    environment:
+      - POSTGRES_DB=scopehouse
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=pass
+    networks:
+      - scopehouse
+    healthcheck:
+      test: ["CMD", "pg_isready -d ${POSTGRES_DB} -U ${POSTGRES_USER}"]
+      interval: 3s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+networks:
+  scopehouse:
+    driver: bridge
