@@ -45,12 +45,11 @@ func Serve(app core.App, config ServerConfig) error {
 		config.WriteTimeout = DefaultWriteTimeout
 	}
 
-	svc := newService(app)
-	mux := svc.routes()
+	router := newRouter(app)
 
 	server := &http.Server{
 		Addr:         fmt.Sprintf(":%d", config.Port),
-		Handler:      svc.handler(mux),
+		Handler:      router.handler(),
 		IdleTimeout:  time.Second * config.IdleTimeout,
 		ReadTimeout:  time.Second * config.ReadTimeout,
 		WriteTimeout: time.Second * config.WriteTimeout,

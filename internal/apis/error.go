@@ -1,56 +1,25 @@
 package apis
 
 import (
+	"fmt"
 	"log/slog"
 	"net/http"
-	"strings"
 
-	"github.com/dlbarduzzi/scopehouse/internal/tools/event"
-	"github.com/dlbarduzzi/scopehouse/internal/tools/inflector"
+	"github.com/dlbarduzzi/scopehouse/internal/core"
 )
 
-type apiError struct {
-	Status  int    `json:"status"`
-	Message string `json:"message"`
-}
-
-// Error makes it compatible with the `error` interface.
-func (e *apiError) Error() string {
-	return e.Message
-}
-
-func newApiError(status int, message string) *apiError {
-	msg := strings.TrimSpace(message)
-	if msg == "" {
-		msg = http.StatusText(status)
-	}
-
-	return &apiError{
-		Status:  status,
-		Message: inflector.FormatSentence(msg),
-	}
-}
-
-func newInternalServerError(message string) *apiError {
-	msg := strings.TrimSpace(message)
-	if msg == "" {
-		msg = "Something went wrong while processing your request."
-	}
-
-	return newApiError(http.StatusInternalServerError, msg)
-}
-
-func (s *service) internalServerError(w http.ResponseWriter, r *http.Request, err error) {
-	s.app.Logger().Error("internal server error",
-		slog.Any("error", err),
-		slog.String("method", r.Method),
-		slog.String("request", r.RequestURI),
+func internalServerError(e *core.EventRequest, err error) {
+	e.App.Logger().Error("internal server error",
+		slog.String("code", "INTERNAL_SERVER_ERROR"),
+		slog.String("error", fmt.Sprintf("%v", err)),
+		slog.String("method", e.Request.Method),
+		slog.String("request", e.Request.RequestURI),
 	)
 
-	resp := newInternalServerError("")
+	resp := e.InternalServerError("")
 
-	if err := event.WriteJson(w, resp, resp.Status); err != nil {
-		_ = event.WriteStatus(w, http.StatusInternalServerError)
+	if err := e.Json(resp, resp.Status); err != nil {
+		_ = e.Status(http.StatusInternalServerError)
 		return
 	}
 }

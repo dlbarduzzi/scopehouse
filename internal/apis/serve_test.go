@@ -5,18 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/dlbarduzzi/scopehouse/internal/tests"
 )
-
-type apiTestRoute struct {
-	pattern string
-	handler func(http.ResponseWriter, *http.Request)
-}
 
 type apiTestScenario struct {
 	// name is the test name.
@@ -35,10 +29,10 @@ type apiTestScenario struct {
 	// headers specifies the headers to send with the request.
 	headers map[string]string
 
-	// extraRoute is an route that is not part of the API but that you
+	// apiRoute is an route that is not part of the API but that you
 	// want to test. An example is a panic middleware where you explicitly
 	// call this route for testing purposes.
-	testRoute *apiTestRoute
+	apiRoute *apiRoute
 
 	// status specifies the expected response HTTP status code.
 	status int
@@ -78,14 +72,13 @@ func (s *apiTestScenario) _test(t *testing.T) {
 		s.beforeTestFunc(t, app)
 	}
 
-	svc := newService(app)
-	mux := svc.routes()
+	router := newRouter(app)
 
-	if (s.testRoute) != nil {
-		mux.HandleFunc(s.testRoute.pattern, s.testRoute.handler)
+	if (s.apiRoute) != nil {
+		router.get(s.apiRoute.pattern, s.apiRoute.handler)
 	}
 
-	handler := svc.handler(mux)
+	handler := router.handler()
 	handler.ServeHTTP(rec, req)
 
 	res := rec.Result()

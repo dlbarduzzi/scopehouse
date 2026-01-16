@@ -3,10 +3,10 @@ package apis
 import (
 	"net/http"
 
-	"github.com/dlbarduzzi/scopehouse/internal/tools/event"
+	"github.com/dlbarduzzi/scopehouse/internal/core"
 )
 
-func (s *service) healthCheck(w http.ResponseWriter, r *http.Request) {
+func healthCheck(e *core.EventRequest) {
 	resp := struct {
 		Status  int    `json:"status"`
 		Message string `json:"message"`
@@ -15,8 +15,8 @@ func (s *service) healthCheck(w http.ResponseWriter, r *http.Request) {
 		Message: "API is healthy.",
 	}
 
-	if err := event.WriteJson(w, resp, resp.Status); err != nil {
-		s.internalServerError(w, r, err)
+	if err := e.Json(resp, resp.Status); err != nil {
+		internalServerError(e, err)
 		return
 	}
 }
